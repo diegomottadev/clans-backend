@@ -1,0 +1,58 @@
+# =============================================================
+# Docker Compose — Instituto Clans (produccion en red local)
+# =============================================================
+# Solo backend (PHP-FPM + Nginx).
+# PostgreSQL corre en el host Ubuntu, no en contenedor.
+#
+# Frontend (build estatico) se sirve desde el host:
+#   /var/www/html/clans-view  (puerto 80, Nginx nativo o Apache)
+#
+# Uso:
+#   cp .env.clans.example .env
+#   cp docker-compose.clans.example docker-compose.yml
+#   cp Dockerfile.clans.example Dockerfile
+#   docker compose up -d --build
+# =============================================================
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clans_app
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - app_storage:/var/www/storage
+      - app_bootstrap_cache:/var/www/bootstrap/cache
+    expose:
+      - "9000"
+    entrypoint: ["sh", "/usr/local/bin/entrypoint.sh"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    networks:
+      - clans
+
+  web:
+    image: nginx:alpine
+    container_name: clans_web
+    depends_on:
+      - app
+    volumes:
+      - ./:/var/www
+      - app_storage:/var/www/storage
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    networks:
+      - clans
+
+networks:
+  clans:
+    driver: bridge
+
+volumes:
+  app_storage:
+  app_bootstrap_cache:

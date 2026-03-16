@@ -1,0 +1,31 @@
+{
+  "files": {
+    "main.css": "/static/css/main.7798d203.chunk.css",
+    "main.js": "/static/js/main.a21c9098.chunk.js",
+    "main.js.map": "/static/js/main.a21c9098.chunk.js.map",
+    "runtime-main.js": "/static/js/runtime-main.e6123512.js",
+    "runtime-main.js.map": "/static/js/runtime-main.e6123512.js.map",
+    "static/css/2.d077ef3e.chunk.css": "/static/css/2.d077ef3e.chunk.css",
+    "static/js/2.6ca3d117.chunk.js": "/static/js/2.6ca3d117.chunk.js",
+    "static/js/2.6ca3d117.chunk.js.map": "/static/js/2.6ca3d117.chunk.js.map",
+    "index.html": "/index.html",
+    "static/css/2.d077ef3e.chunk.css.map": "/static/css/2.d077ef3e.chunk.css.map",
+    "static/css/main.7798d203.chunk.css.map": "/static/css/main.7798d203.chunk.css.map",
+    "static/js/2.6ca3d117.chunk.js.LICENSE.txt": "/static/js/2.6ca3d117.chunk.js.LICENSE.txt",
+    "static/media/primereact.min.css": "/static/media/color.6441e63a.png",
+    "static/media/flags.css": "/static/media/flags_responsive.266bf78d.png",
+    "static/media/400.css": "/static/media/nunito-vietnamese-400-normal.405d9085.woff",
+    "static/media/500.css": "/static/media/nunito-vietnamese-500-normal.c8a9e76e.woff",
+    "static/media/600.css": "/static/media/nunito-vietnamese-600-normal.84363c46.woff",
+    "static/media/700.css": "/static/media/nunito-vietnamese-700-normal.561dde70.woff",
+    "static/media/800.css": "/static/media/nunito-vietnamese-800-normal.c524fa1c.woff2",
+    "static/media/primeicons.css": "/static/media/primeicons.e61f3495.woff"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.e6123512.js",
+    "static/css/2.d077ef3e.chunk.css",
+    "static/js/2.6ca3d117.chunk.js",
+    "static/css/main.7798d203.chunk.css",
+    "static/js/main.a21c9098.chunk.js"
+  ]
+}

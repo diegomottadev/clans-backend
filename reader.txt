@@ -1,0 +1,42 @@
+Documento técnico
+
+Restaurar base de datos (Vagrant) con usuario homestead
+
+pg_restore -U homestead -d clans backup/clans
+
+Acceder  la DB desde terminal
+
+sudo -u postgres psql clans
+
+Ver tablas
+
+\dt
+
+
+Chequear version de psql
+
+Psql -version
+
+JWT
+
+General la clave para usar jwt
+https://jwt-auth.readthedocs.io/en/develop/laravel-installation/
+
+php artisan jwt:secret
+
+Pasos para  migrar la vieja db al formato de Laravel
+
+pg_restore -U homestead -d clans backup/clans_01
+password:secret
+eliminar archivos de las tablas de migraciones si existen
+php artisan migrate:install
+php artisan migrate:generate --tables="asistencias,alumnos,fechas_curso,niveles,tipos_asistencias,tipo_evaluacion,evaluaciones,tipos_cursado,idiomas,horarios,profesores,evaluaciones_alumnos,pagos_profesores,tipos_egresos,facturas,pagos_cuentas,conceptos,cursos,alumnos_cursos,tutores"
+responder luego con yes
+php artisan migrate
+php artisan db:seed --class=AddNameCompleteAllStudent & php artisan db:seed --class=CreateIdAlumnoFromAlumnosCursoToFacturasSeed & php artisan db:seed --class=UserSeed & php artisan db:seed --class=CreateAcademicYearSeeder & php artisan db:seed --class=AddNameCompleteTeachers
+
+Pasar alumnos inscriptos a cursos reciente a los cursos que tienen asignado el año lectivo actual
+Antes de ejecutar este comando desde la interfaz  crear un ciclo lectivo nuevo
+php artisan db:seed --class=UpdateCourseWithYearAcademicCurrent
+
+
