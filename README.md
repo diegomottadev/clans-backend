@@ -1,62 +1,234 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+# Instituto Clans - Backend API
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+REST API para el sistema de gestión del Instituto de Idiomas Clans, construido con **Laravel 8** y **PostgreSQL**.
 
-## About Laravel
+> **Frontend:** [clans-frontend](https://github.com/diegomottadev/clans-frontend)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Descripción
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Sistema integral de gestión para un instituto de idiomas que permite administrar alumnos, cursos, docentes, evaluaciones, asistencias y facturación. Expone una API RESTful consumida por el frontend en React.
 
-## Learning Laravel
+## Tecnologías
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+| Componente | Tecnología |
+|---|---|
+| Framework | Laravel 8 (PHP 7.4+) |
+| Base de datos | PostgreSQL |
+| Autenticación | JWT (`tymon/jwt-auth`) |
+| Roles y permisos | Entrust |
+| Serialización API | Spatie Fractal |
+| Generación de PDFs | DomPDF |
+| Contenedores | Docker + Nginx |
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Módulos principales
 
-## Laravel Sponsors
+- **Gestión Académica:** Ciclos lectivos, idiomas, niveles, cursos, aulas y horarios
+- **Alumnos:** CRUD, inscripción a cursos, historial académico
+- **Docentes:** CRUD, asignación a cursos, gestión de pagos
+- **Evaluaciones:** Creación de exámenes, carga de notas por criterio (listening, vocabulary, reading, writing, oral, etc.)
+- **Asistencias:** Registro de asistencia por fecha de clase con tipos configurables
+- **Facturación:** Generación de facturas por alumno/curso/mes, cálculo de mora automática, gestión de deudores
+- **Gastos fijos:** Registro de costos operativos
+- **Reportes y PDFs:** Reportes analíticos por docente, alumno, curso, idioma/nivel, facturación y pagos, con descarga en PDF
+- **Calendario:** Visualización de clases programadas
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+## Requisitos previos
 
-### Premium Partners
+- PHP >= 7.4
+- Composer
+- PostgreSQL 12+
+- Node.js y npm (para assets)
+- Docker y Docker Compose (opcional)
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/)**
-- **[OP.GG](https://op.gg)**
+## Instalación
 
-## Contributing
+### Con Docker (recomendado)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+# Clonar el repositorio
+git clone https://github.com/diegomottadev/clans-backend.git
+cd clans-backend
 
-## Code of Conduct
+# Copiar archivo de entorno
+cp .env.example .env
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Configurar las variables de entorno en .env
+# DB_CONNECTION=pgsql
+# DB_HOST=host.docker.internal
+# DB_PORT=5432
+# DB_DATABASE=clans
+# DB_USERNAME=tu_usuario
+# DB_PASSWORD=tu_password
+# JWT_SECRET=tu_jwt_secret
 
-## Security Vulnerabilities
+# Levantar los contenedores
+docker-compose up -d
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# Instalar dependencias dentro del contenedor
+docker exec clans_app composer install
 
-## License
+# Generar key de la aplicación
+docker exec clans_app php artisan key:generate
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+# Generar secret JWT
+docker exec clans_app php artisan jwt:secret
+
+# Ejecutar migraciones y seeders
+docker exec clans_app php artisan migrate --seed
+```
+
+La API estará disponible en `http://localhost:8080`.
+
+### Sin Docker
+
+```bash
+# Clonar el repositorio
+git clone https://github.com/diegomottadev/clans-backend.git
+cd clans-backend
+
+# Instalar dependencias
+composer install
+
+# Copiar y configurar entorno
+cp .env.example .env
+# Editar .env con los datos de tu PostgreSQL
+
+# Generar keys
+php artisan key:generate
+php artisan jwt:secret
+
+# Ejecutar migraciones y seeders
+php artisan migrate --seed
+
+# Iniciar servidor de desarrollo
+php artisan serve
+```
+
+La API estará disponible en `http://localhost:8000`.
+
+## Autenticación
+
+La API utiliza **JWT (JSON Web Tokens)**. Todos los endpoints (excepto login) requieren el header:
+
+```
+Authorization: Bearer <token>
+```
+
+### Roles
+
+| Rol | Acceso |
+|---|---|
+| `admin` | Acceso completo a todos los módulos |
+| `user` | Acceso a gestión académica, alumnos, evaluaciones y asistencias |
+
+## Endpoints principales
+
+### Auth
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/api/auth/login` | Iniciar sesión |
+| POST | `/api/auth/logout` | Cerrar sesión |
+| GET | `/api/auth/me` | Usuario autenticado |
+| POST | `/api/auth/refresh` | Refrescar token |
+
+### Ciclos Lectivos
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/schoolYears` | Listar ciclos lectivos |
+| GET | `/api/schoolYears/current` | Ciclo lectivo actual |
+| POST | `/api/schoolYears` | Crear ciclo lectivo |
+| PUT | `/api/schoolYears/{id}` | Actualizar ciclo lectivo |
+
+### Alumnos
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/students` | Listar alumnos |
+| POST | `/api/students` | Crear alumno |
+| PUT | `/api/students/{id}` | Actualizar alumno |
+| DELETE | `/api/students/{id}` | Eliminar alumno |
+| POST | `/api/students/{id}/courses` | Inscribir a curso |
+
+### Cursos
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/courses` | Listar cursos |
+| POST | `/api/courses` | Crear curso |
+| PUT | `/api/courses/{id}` | Actualizar curso |
+| DELETE | `/api/courses/{id}` | Eliminar curso |
+
+### Evaluaciones
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/evaluations` | Listar evaluaciones |
+| POST | `/api/evaluations` | Crear evaluación |
+| POST | `/api/evaluations/{id}/students` | Cargar nota de alumno |
+
+### Asistencias
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/assistances` | Listar asistencias |
+| POST | `/api/assistances` | Crear registro de asistencia |
+| POST | `/api/assistances/{id}/students` | Registrar asistencia de alumno |
+
+### Facturación
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/invoices` | Listar facturas |
+| POST | `/api/invoices` | Crear factura |
+| PUT | `/api/invoices/{id}` | Actualizar factura |
+| GET | `/api/debtors` | Listar deudores |
+
+### Reportes
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/reports/teachers` | Reporte de docentes |
+| GET | `/api/reports/assistencesByCourse` | Asistencias por curso |
+| GET | `/api/reports/reportCompleteByStudent` | Reporte completo por alumno |
+| GET | `/api/reports/reportAnalytical` | Reporte analítico |
+| GET | `/api/reports/downloadReportByStudent` | Descargar PDF por alumno |
+
+> Consultar `routes/api.php` para la lista completa de endpoints.
+
+## Estructura del proyecto
+
+```
+app/
+├── Http/
+│   ├── Controllers/     # Controladores por dominio (25+)
+│   ├── Middleware/       # isAdmin, isUser
+│   └── Requests/        # Form requests de validación
+├── Models/              # Modelos Eloquent (27)
+├── Traits/              # ApiResponse trait
+└── Transformers/        # Fractal transformers para API
+database/
+├── migrations/          # 70+ migraciones
+└── seeders/             # Datos iniciales de desarrollo
+docker/
+└── nginx/               # Configuración Nginx
+routes/
+└── api.php              # Definición de rutas API (~127 rutas)
+```
+
+## Seeders disponibles
+
+```bash
+php artisan db:seed
+```
+
+Incluye datos de ejemplo para: usuarios, idiomas, niveles, tipos de evaluación, tipos de asistencia, tipos de cursado, tipos de egreso y configuración inicial.
+
+## Variables de entorno clave
+
+| Variable | Descripción |
+|---|---|
+| `DB_CONNECTION` | `pgsql` |
+| `DB_HOST` | Host de PostgreSQL |
+| `DB_DATABASE` | Nombre de la base de datos |
+| `JWT_SECRET` | Secret para firmar tokens JWT |
+| `JWT_TTL` | Tiempo de vida del token en minutos (default: 480) |
+
+## Licencia
+
+Este proyecto está bajo la licencia [MIT](https://opensource.org/licenses/MIT).
