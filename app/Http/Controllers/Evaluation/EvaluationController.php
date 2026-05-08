@@ -61,7 +61,7 @@ class EvaluationController extends ApiController
         // 2) Input libre: nombre de la evaluación (opcional)
         $name = $request->input('name');
         if ($name !== null && $name !== '') {
-            $query->where('nombre', 'ilike', '%' . $name . '%');
+            $query->whereRaw("UPPER(unaccent(nombre)) LIKE UPPER(unaccent(?))", ['%' . $name . '%']);
         }
 
         // 3) Nivel (opcional)
@@ -155,7 +155,7 @@ class EvaluationController extends ApiController
 
         $name = $request->input('name');
         if ($name !== null && $name !== '') {
-            $query->where('nombre', 'ilike', '%' . $name . '%');
+            $query->whereRaw("UPPER(unaccent(nombre)) LIKE UPPER(unaccent(?))", ['%' . $name . '%']);
         }
 
         $total     = (clone $query)->count();

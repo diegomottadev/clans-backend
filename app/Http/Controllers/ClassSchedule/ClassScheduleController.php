@@ -18,8 +18,27 @@ class ClassScheduleController extends ApiController
     {
         $classes = ClassSchedule::query()
             ->with(['course.level.languaje', 'teacher', 'classroom'])
-            ->orderBy('fecha', 'DESC')
-            ->orderBy('hora_inicio', 'ASC');
+            ->orderBy('id', 'DESC');
+
+        if ($request->filled('course_id') && $request->course_id !== 'null') {
+            $classes->where('id_curso', (int) $request->course_id);
+        }
+
+        if ($request->filled('teacher_id') && $request->teacher_id !== 'null') {
+            $classes->where('id_profesor', (int) $request->teacher_id);
+        }
+
+        if ($request->filled('classroom_id') && $request->classroom_id !== 'null') {
+            $classes->where('id_aula', (int) $request->classroom_id);
+        }
+
+        if ($request->filled('date_from') && $request->date_from !== 'null') {
+            $classes->where('fecha', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to') && $request->date_to !== 'null') {
+            $classes->where('fecha', '<=', $request->date_to);
+        }
 
         $collections = $request->input('all', '') == 1
             ? $this->showList($classes->get())

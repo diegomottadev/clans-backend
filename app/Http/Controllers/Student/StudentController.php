@@ -41,10 +41,14 @@ class StudentController extends ApiController
             'all' => $request->input('all'),
         ]);
 
-        $students = Student::query()->with('courses')->orderBy('id', 'DESC');
+        $students = Student::query()->with('courses');
 
         if ($request->completeName) {
-            $students->where('nombreCompleto', 'like', '%' . $request->completeName . '%');
+            $term = '%' . $request->completeName . '%';
+            $students->where(function ($q) use ($term) {
+                $q->whereRaw("UPPER(unaccent(\"nombreCompleto\")) LIKE UPPER(unaccent(?))", [$term])
+                  ->orWhereRaw("UPPER(unaccent(apellido || ' ' || nombre)) LIKE UPPER(unaccent(?))", [$term]);
+            });
         }
 
         $schoolYearId = null;
@@ -65,14 +69,18 @@ class StudentController extends ApiController
             }
         }
 
+        $hasStatusFilter = !$filterNoCourse
+            && $request->has('status')
+            && $request->status !== null
+            && $request->status !== '';
+
         if ($filterNoCourse && $schoolYearId !== null) {
-            // Filtro "Sin cursos": estudiantes que no tienen ningún curso en el año indicado
             $students->whereDoesntHave('courses', function ($q) use ($schoolYearId) {
                 $q->where('school_year_id', $schoolYearId);
             });
             Log::channel('single')->info('[StudentController::index] Filtro sin cursos en año', ['schoolYearId' => $schoolYearId]);
-        } elseif ($schoolYearId !== null) {
-            // Filtro por ciclo: solo quienes tienen al menos un curso en ese año
+        } elseif ($hasStatusFilter && $schoolYearId !== null) {
+            // Solo restringir a alumnos con curso cuando se elige un estado específico
             $students->whereHas('courses', function ($q) use ($schoolYearId) {
                 $q->where('school_year_id', $schoolYearId);
             });
@@ -100,19 +108,42 @@ class StudentController extends ApiController
             });
         }
 
-        // Contadores totales (activos e inactivos con curso en el año; no aplican cuando noCourse=1)
+        // Contadores totales
         $totalActive = (clone $students)->where('activo', true)->count();
         $totalInactive = (clone $students)->where('activo', false)->count();
 
-        // Por defecto solo estudiantes activos; si envían status se respeta (no aplica cuando noCourse=1 para mostrar todos sin curso)
-        if (!$filterNoCourse) {
-            if ($request->has('status') && $request->status !== null && $request->status !== '') {
-                $students->where('activo', (int) $request->status);
-                Log::channel('single')->info('[StudentController::index] Filtro status explícito', ['activo' => (int) $request->status]);
-            } else {
-                $students->where('activo', true);
-                Log::channel('single')->info('[StudentController::index] Filtro status por defecto: activo=true');
-            }
+        if ($filterNoCourse) {
+            // Sin cursos: sin filtro de activo, ya restringido por whereDoesntHave
+        } elseif ($hasStatusFilter) {
+            $students->where('activo', (int) $request->status);
+            Log::channel('single')->info('[StudentController::index] Filtro status explícito', ['activo' => (int) $request->status]);
+        }
+        // else: sin status → mostrar todos, ordenados por grupos
+
+        // Ordenamiento
+        if (!$filterNoCourse && !$hasStatusFilter && $schoolYearId !== null) {
+            // Sin filtro de estado: activos con curso → inactivos con curso → sin curso
+            $students->orderByRaw("
+                CASE
+                    WHEN activo = true AND EXISTS(
+                        SELECT 1 FROM alumnos_cursos ac
+                        INNER JOIN cursos c ON c.id = ac.id_curso
+                        WHERE ac.id_alumno = alumnos.id
+                          AND c.school_year_id = ?
+                          AND ac.deleted_at IS NULL
+                    ) THEN 1
+                    WHEN activo = false AND EXISTS(
+                        SELECT 1 FROM alumnos_cursos ac
+                        INNER JOIN cursos c ON c.id = ac.id_curso
+                        WHERE ac.id_alumno = alumnos.id
+                          AND c.school_year_id = ?
+                          AND ac.deleted_at IS NULL
+                    ) THEN 2
+                    ELSE 3
+                END ASC, id DESC
+            ", [$schoolYearId, $schoolYearId]);
+        } else {
+            $students->orderBy('id', 'DESC');
         }
 
         $totalBeforeResponse = $students->count();

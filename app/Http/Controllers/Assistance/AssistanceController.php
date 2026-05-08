@@ -61,7 +61,7 @@ class AssistanceController extends ApiController
                 $query->where('id_curso', (int) $courseAssistence);
             } else {
                 $query->whereHas('course', function ($q) use ($courseAssistence) {
-                    $q->where('nombre', 'ilike', '%' . $courseAssistence . '%');
+                    $q->whereRaw("UPPER(unaccent(nombre)) LIKE UPPER(unaccent(?))", ['%' . $courseAssistence . '%']);
                 });
             }
         }
@@ -110,7 +110,7 @@ class AssistanceController extends ApiController
                 $query->where('id_curso', (int) $courseAssistence);
             } else {
                 $query->whereHas('course', function ($q) use ($courseAssistence) {
-                    $q->where('nombre', 'ilike', '%' . $courseAssistence . '%');
+                    $q->whereRaw("UPPER(unaccent(nombre)) LIKE UPPER(unaccent(?))", ['%' . $courseAssistence . '%']);
                 });
             }
         }

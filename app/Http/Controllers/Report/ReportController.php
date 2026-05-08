@@ -999,18 +999,36 @@ class ReportController extends ApiController
         $canvas->image($bgPath, 0, 0, $w, $h);
         $canvas->close_object();
 
-        // Prepend background object to each page's contents (so it renders BEHIND content)
+        // Create date text object — aligned with "Fecha:" label in background image (first page only)
+        // Background image is 904×1280px scaled to letter 612×792pt.
+        // "Fecha:" label in image is at ~(545px, 198px) → in pt: x≈369, y≈122
+        $dateObjId = $canvas->open_object();
+        $dateStr = \Carbon\Carbon::now()->format('d/m/Y');
+        $font = $dompdf->getFontMetrics()->getFont("Helvetica", "bold");
+        $canvas->text(369, 103, $dateStr, $font, 10, [0.1, 0.1, 0.1]);
+        $canvas->close_object();
+
+        // Background on all pages; date text only on first page
         $cpdf = $canvas->get_cpdf();
+        $pageIdx = 0;
         foreach ($cpdf->objects as &$obj) {
             if ($obj['t'] === 'page' && isset($obj['info']['contents'])) {
                 array_unshift($obj['info']['contents'], $bgObjId);
+                if ($pageIdx === 0) {
+                    array_push($obj['info']['contents'], $dateObjId);
+                }
+                $pageIdx++;
             }
         }
         unset($obj);
 
+        $studentName = preg_replace('/[^a-zA-Z0-9]+/', '-', iconv('UTF-8', 'ASCII//TRANSLIT', $student->nombreCompleto));
+        $timestamp = \Carbon\Carbon::now()->format('d-m-Y_H-i');
+        $filename = "Analitico-{$studentName}-{$timestamp}.pdf";
+
         return response($dompdf->output(), 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="analitico.pdf"',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);
 
     }

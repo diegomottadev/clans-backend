@@ -158,17 +158,19 @@ trait ApiResponse{
                 $attribute = $transformer::originalAttributes($query);
 
                 if(isset($attribute,$value) && $attribute == 'student'){
-                   $collection = $collection->whereHas('student', function($q) use($value){
-                                            $q->where('nombreCompleto', 'ilike','%'.$value.'%');
-                                });
+                    $term = '%' . $value . '%';
+                    $collection = $collection->whereHas('student', function($q) use($term){
+                        $q->whereRaw("UPPER(unaccent(\"nombreCompleto\")) LIKE UPPER(unaccent(?))", [$term]);
+                    });
                 }
             }
             else if($transformer == FixedCostTransform::class){
                 $attribute = $transformer::originalAttributes($query);
 
                 if(isset($attribute,$value) && $attribute == 'typeExpense'){
-                    $collection = $collection->whereHas('typeExpense', function($q) use($value){
-                        $q->where('nombre', 'ilike','%'.$value.'%');
+                    $term = '%' . $value . '%';
+                    $collection = $collection->whereHas('typeExpense', function($q) use($term){
+                        $q->whereRaw("UPPER(unaccent(nombre)) LIKE UPPER(unaccent(?))", [$term]);
                     });
                 }
             }
@@ -176,8 +178,9 @@ trait ApiResponse{
                 $attribute = $transformer::originalAttributes($query);
 
                 if(isset($attribute,$value) && $attribute == 'teacher'){
-                    $collection = $collection->whereHas('teacher', function($q) use($value){
-                        $q->where('nombre', 'ilike','%'.$value.'%');
+                    $term = '%' . $value . '%';
+                    $collection = $collection->whereHas('teacher', function($q) use($term){
+                        $q->whereRaw("UPPER(unaccent(nombre)) LIKE UPPER(unaccent(?))", [$term]);
                     });
                 }
             }
@@ -186,8 +189,9 @@ trait ApiResponse{
                 $attribute = $transformer::originalAttributes($query);
 
                 if(isset($attribute,$value) && $attribute == 'courseAssistence'){
-                    $collection = $collection->whereHas('course', function($q) use($value){
-                        $q->where('nombre', 'ilike','%'.$value.'%');
+                    $term = '%' . $value . '%';
+                    $collection = $collection->whereHas('course', function($q) use($term){
+                        $q->whereRaw("UPPER(unaccent(nombre)) LIKE UPPER(unaccent(?))", [$term]);
                     });
                 }else if(isset($attribute,$value) && $attribute == 'dateAssistence'){
                     $collection = $collection->where('fecha', $value);
@@ -198,16 +202,23 @@ trait ApiResponse{
                 $attribute = $transformer::originalAttributes($query);
 
                 if(isset($attribute,$value) && $attribute == 'name'){
-                    $collection = $collection->where('nombre', 'ilike','%'.$value.'%');
+                    $term = '%' . $value . '%';
+                    $collection = $collection->whereRaw("UPPER(unaccent(nombre)) LIKE UPPER(unaccent(?))", [$term]);
                 }
             }
 
             else if($transformer == StudentTransform::class){
                 $attribute = $transformer::originalAttributes($query);
                 if(isset($attribute,$value)){
-                    // activo es boolean: comparación exacta, no ilike
                     if($attribute === 'activo'){
                         $collection = $collection->where('activo', (int) $value);
+                    } elseif($attribute === 'nombreCompleto'){
+                        // Busca sin acentos ni distinción de mayúsculas, en ambas combinaciones nombre/apellido
+                        $term = '%' . $value . '%';
+                        $collection = $collection->where(function ($q) use ($term) {
+                            $q->whereRaw("UPPER(unaccent(\"nombreCompleto\")) LIKE UPPER(unaccent(?))", [$term])
+                              ->orWhereRaw("UPPER(unaccent(apellido || ' ' || nombre)) LIKE UPPER(unaccent(?))", [$term]);
+                        });
                     } else {
                         $collection = $collection->where($attribute, 'ilike', '%'.$value.'%');
                     }
@@ -217,7 +228,7 @@ trait ApiResponse{
             else{
                 $attribute = $transformer::originalAttributes($query);
                 if(isset($attribute,$value)){
-                   $collection = $collection->where($attribute, 'ilike', '%'.$value.'%');;
+                    $collection = $collection->whereRaw("UPPER(unaccent({$attribute})) LIKE UPPER(unaccent(?))", ['%'.$value.'%']);
                 }
             }
 

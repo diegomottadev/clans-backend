@@ -64,7 +64,7 @@ class DebtorController extends ApiController
             $maxMonthDue = $filterMonth;
         }
 
-        // Ciclo lectivo: marzo (3) a diciembre (12)
+        // Ciclo obligatorio: marzo (3) a diciembre (12). Enero y febrero son opcionales.
         $maxMonthDue = min($maxMonthDue, 12);
 
         if ($maxMonthDue < 3) {

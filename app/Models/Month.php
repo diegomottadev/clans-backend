@@ -8,8 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class Month extends Model
 {
     use HasFactory;
-    // Ciclo lectivo: marzo a diciembre
+    // Ciclo lectivo: enero a diciembre
     const MONTHS = [
+        ["id"=>1,"name"=>"Enero"],
+        ["id"=>2,"name"=>"Febrero"],
         ["id"=>3,"name"=>"Marzo"],
         ["id"=>4,"name"=>"Abril"],
         ["id"=>5,"name"=>"Mayo"],

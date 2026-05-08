@@ -7,7 +7,7 @@
     <title>{{ config('app.name', 'Instituto Clans') }}</title>
     <style>
         @page {
-            margin: 0;
+            margin: 185px 80px 100px 80px;
         }
         body {
             margin: 0;
@@ -15,7 +15,7 @@
             font-family: Arial, Helvetica, sans-serif;
         }
         .page-content {
-            padding: 140px 80px 90px 80px;
+            padding: 0;
         }
         .card {
             border: none;
@@ -80,7 +80,7 @@
         </div>
 
         <h3><strong>{{ $student->nombreCompleto }}</strong></h3>
-        <p><strong>Curso: </strong>{{ $course->nombre }}</p>
+        <p><strong>Curso: {{ $course->nombre }}</strong></p>
         {!! $dateInit != "null" && $dateFinish !="null" ? "<p><strong>Período del ".$dateInit. " al "  .$dateFinish. " </strong></p>" : '' !!}
 
         <br>
