@@ -6,15 +6,13 @@
     <meta http-equiv="cache-control" content="max-age=604800" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>{{ config('app.name', 'Instituto Clans') }}</title>
-    <link href="{{ asset('libs/bootstrap/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
+    {{-- Archivo local dentro del chroot de dompdf (no se descargan recursos remotos) --}}
+    <link href="{{ public_path('libs/bootstrap/bootstrap.min.css') }}" rel="stylesheet" type="text/css" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @stack('styles')
 </head>
 <body>
     @yield('content')
 
-    <script src="{{ asset('libs/jquery/jquery-2.1.1.js') }}" type="text/javascript"></script>
-
-    <script src="{{ asset('libs/bootstrap/bootstrap.js') }}" type="text/javascript"></script>
 </body>
 </html>

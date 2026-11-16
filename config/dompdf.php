@@ -71,7 +71,7 @@ return array(
          * direct class use like:
          * $dompdf = new DOMPDF();	$dompdf->load_html($htmldata); $dompdf->render(); $pdfdata = $dompdf->output();
          */
-        "chroot" => realpath(base_path()),
+        "chroot" => realpath(public_path()), // solo public/: nunca .env ni el código
 
         /**
          * Whether to enable font subsetting or not.
@@ -227,7 +227,7 @@ return array(
          *
          * @var bool
          */
-        "enable_remote" => true,
+        "enable_remote" => false, // sin descargas remotas (SSRF / CVE-2022-28368)
 
         /**
          * A ratio applied to the fonts height to be more like browsers' line height
