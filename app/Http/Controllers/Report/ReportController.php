@@ -829,6 +829,9 @@ class ReportController extends ApiController
 
     public function reportAnalytical(Request $request)
     {
+        $this->validate($request, [
+            'studentId' => 'required|integer|exists:alumnos,id',
+        ]);
         $courseId = $request->courseId;
         $studentId = $request->studentId;
         $dateInit = $request->dateInit;
@@ -984,6 +987,9 @@ class ReportController extends ApiController
 
     public function downloadReportAnalytical(Request $request)
     {
+        $this->validate($request, [
+            'studentId' => 'required|integer|exists:alumnos,id',
+        ]);
         $courseId = $request->courseId;
         $oralidad = $request->oralidad;
         $participacion = $request->participacion;

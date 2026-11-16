@@ -29,7 +29,7 @@ class isAdmin
             return $next($request);
         }
 
-        return $this->errorResponse('No tiene permisos para acceder al contenido de la página',404);
+        return $this->errorResponse('No tiene permisos para acceder al contenido de la página',403);
 
     }
 }

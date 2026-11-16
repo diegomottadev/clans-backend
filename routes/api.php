@@ -56,7 +56,6 @@ Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttl
 Route::post('auth/logout', [AuthController::class, 'logout']);
 Route::post('auth/refresh', [AuthController::class, 'refresh']);
 Route::get('schoolYears/current',[SchoolYearController::class,'getCurretYear']);
-Route::get('reports/teachers', [ReportController::class, 'getReportTeacher'])->middleware(['isAdmin']);
 Route::get('reports/assistencesByCourse', [ReportController::class, 'getReportAssistancesByCourse'])->middleware(['isAdmin']);
 Route::get('reports/assistencesByStudent', [ReportController::class, 'getReportAssistancesByStudent'])->middleware(['isAdmin']);
 Route::get('reports/reportCompleteByStudent', [ReportController::class, 'getReportCompleteByStudent'])->middleware(['isAdmin']);
