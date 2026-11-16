@@ -21,6 +21,7 @@ class PaymentTeacher extends Model
         'fecha',
         'id_profesor',
         'monto',
+        'observacion',
     ];
 
     public function teacher()

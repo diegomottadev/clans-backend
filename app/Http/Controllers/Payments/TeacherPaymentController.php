@@ -45,6 +45,7 @@ class TeacherPaymentController extends ApiController
             'date' => 'required',
             'teacher' => 'required',
             'amount' => 'required',
+            'observation' => 'nullable|string|max:500',
         ];
 
         $this->validate($request,$rules);
@@ -54,6 +55,7 @@ class TeacherPaymentController extends ApiController
             'fecha' => $request->date,
             'id_profesor' => $request->teacher,
             'monto' => $request->amount,
+            'observacion' => $request->observation,
 
         ]);
 
@@ -76,6 +78,7 @@ class TeacherPaymentController extends ApiController
             'date' => 'required',
             'teacher' => 'required',
             'amount' => 'required',
+            'observation' => 'nullable|string|max:500',
         ];
 
         $this->validate($request,$rules);
@@ -83,6 +86,7 @@ class TeacherPaymentController extends ApiController
         $paymentTeacher->fecha = $request->date;
         $paymentTeacher->id_profesor = $request->teacher;
         $paymentTeacher->monto = $request->amount;
+        $paymentTeacher->observacion = $request->observation;
         $paymentTeacher->save();
 
         $paymentTeacher->load('teacher');

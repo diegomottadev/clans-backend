@@ -42,16 +42,18 @@
                     @if($teacher == null)
                     <th>Docente</th>
                     @endif
+                    <th>Observación</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($reportsTeacher as $key => $teacher)
+                @foreach ($reportsTeacher as $key => $payment)
                     <tr>
-                        <td>{{ $teacher['date'] }}</td>
-                        <td>{{ $teacher['amount'] }}</td>
+                        <td>{{ $payment['date'] }}</td>
+                        <td>{{ $payment['amount'] }}</td>
                         @if($teacher == null)
-                        <td>{{ $teacher['teacher']->data['completeName'] }}</td>
+                        <td>{{ $payment['teacher']->data['completeName'] ?? '' }}</td>
                         @endif
+                        <td>{{ $payment['observation'] ?? '' }}</td>
                     </tr>
                 @endforeach
             </tbody>
