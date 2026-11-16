@@ -156,7 +156,13 @@ class AssistanceController extends ApiController
      */
     public function store(Request $request)
     {
-        //
+        // La PWA docente envía { fecha, id_curso }; la web { date, course }
+        if (!$request->has('date') && $request->has('fecha')) {
+            $request->merge(['date' => $request->input('fecha')]);
+        }
+        if (!$request->has('course') && $request->has('id_curso')) {
+            $request->merge(['course' => $request->input('id_curso')]);
+        }
         $rules = [
             'date' => 'required',
             'course' =>'required',

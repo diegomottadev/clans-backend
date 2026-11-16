@@ -120,6 +120,7 @@ Route::resource('invoices',InvoiceController::class,['only'=>['index','store','u
 Route::resource('concepts',ConceptController::class,['only'=>['index']])->middleware(['isAdmin']);
 Route::get('assistances/counts', [AssistanceController::class, 'counts'])->middleware(['isUser']);
 Route::resource('assistances',AssistanceController::class,['only'=>['index','store','update','destroy']])->middleware(['isUser']);
+Route::put('assistances/{assistance}/students', [AssistanceStudentController::class, 'replace'])->middleware(['isUser']);
 Route::resource('assistances.students',AssistanceStudentController::class,['only'=>['store','update']])->middleware(['isUser']);
 Route::get('debtors/auto', [DebtorController::class, 'auto'])->middleware(['isAdmin']);
 Route::resource('debtors',DebtorController::class,['only'=>['index']])->middleware(['isAdmin']);
