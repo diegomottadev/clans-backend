@@ -31,15 +31,13 @@ class CourseStudentController extends ApiController
         if (!$this->canAccessCourse($course->id)) {
             return $this->forbiddenCourse();
         }
-        //
-        $schoolYear = SchoolYear::where('active',true);
-        $course = Course::query()
-                        ->with('students')
-                        ->where('school_year_id',$schoolYear->first()->id)
-                        ->where('status',true)
-                        ->where('id',$course->id)
-                        ->orderBy('id','ASC')->get()->toArray();
-         return $this->successResponse($course[0]["students"],200);
+        // Solo cursos habilitados del año lectivo activo; si no lo es, lista vacía (no 500)
+        $schoolYearId = SchoolYear::where('active', true)->value('id');
+        if (!$course->status || (int) $course->school_year_id !== (int) $schoolYearId) {
+            return $this->successResponse([], 200);
+        }
+        $course->load('students');
+        return $this->successResponse($course->toArray()['students'], 200);
     }
 
 }
