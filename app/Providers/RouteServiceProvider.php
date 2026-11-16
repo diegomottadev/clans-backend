@@ -57,7 +57,8 @@ class RouteServiceProvider extends ServiceProvider
     protected function configureRateLimiting()
     {
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
+            // 300/min: holgado para la UI (listados, desplegables, búsquedas) y corta abuso/scraping
+            return Limit::perMinute(300)->by(optional(auth('api')->user())->id ?: $request->ip());
         });
 
         // SecDevOps (OWASP A07 / API4): frena fuerza bruta en el login.

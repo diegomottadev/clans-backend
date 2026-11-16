@@ -43,7 +43,7 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-           // 'throttle:api',
+            'throttle:api', // límite global (ver RouteServiceProvider)
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             RequestTimingMiddleware::class,
         ],

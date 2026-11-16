@@ -48,7 +48,7 @@ class UserController extends ApiController
         $rules = [
             'name' => 'required|max:60',
             'email'=> 'required|email|max:60|unique:users,email',
-            'password'=> 'required',
+            'password'=> 'required|string|min:8',
             'teacher'=> 'required',
             'role' => 'required|in:admin,user'
         ];
