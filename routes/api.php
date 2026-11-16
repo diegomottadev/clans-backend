@@ -132,3 +132,6 @@ Route::resource('classSchedules',ClassScheduleController::class,['only'=>['index
 Route::post('classSchedules/bulk', [ClassScheduleController::class, 'storeBulk'])->middleware(['isAdmin']);
 Route::get('calendar', [CalendarController::class, 'index'])->middleware(['isUser']);
 
+
+// Mi cuenta (perfil propio + foto): ver routes/account.php
+require __DIR__ . '/account.php';

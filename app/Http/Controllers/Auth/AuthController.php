@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Transformers\AccountTransformer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -66,6 +67,8 @@ class AuthController extends Controller
             'email'   => $user->email,
             'role'    => $user->role,
             'teacher' => $user->teacher,
+            'has_avatar' => !empty($user->avatar_path),
+            'avatar_version' => AccountTransformer::avatarVersion($user),
         ];
 
         $etag = '"' . md5(json_encode($data)) . '"';
@@ -122,6 +125,8 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'role' => $user->role,
                 'teacher' => $user->teacher,
+                'has_avatar' => !empty($user->avatar_path),
+                'avatar_version' => AccountTransformer::avatarVersion($user),
             ]
         ]);
     }
