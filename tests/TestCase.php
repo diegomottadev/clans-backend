@@ -15,6 +15,13 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        // Protección: no correr como root. Los archivos que crea la app en storage/ (caché,
+        // vistas compiladas, logs) quedarían de root y php-fpm (www-data) no podría escribirlos.
+        // Usar: docker exec -u www-data clans_app php vendor/bin/phpunit
+        if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+            $this->fail('Tests abortados: no ejecutar como root. Use: docker exec -u www-data clans_app php vendor/bin/phpunit');
+        }
+
         // Protección: abortar si la conexión no apunta a la base de pruebas.
         $database = DB::connection()->getDatabaseName();
         if ($database !== 'clans_test') {

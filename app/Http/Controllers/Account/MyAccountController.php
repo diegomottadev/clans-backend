@@ -104,13 +104,13 @@ class MyAccountController extends ApiController
     public function storeAvatar(Request $request, AvatarImage $images)
     {
         $rules = [
-            'avatar' => 'required|file|max:2048|mimetypes:image/jpeg,image/png'
+            'avatar' => 'required|file|max:2048|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/bmp,image/x-ms-bmp'
                 . '|dimensions:min_width=64,min_height=64,max_width=4000,max_height=4000',
         ];
         $messages = [
             'avatar.required' => 'Seleccione una imagen.',
             'avatar.max' => 'La imagen no puede superar los 2 MB.',
-            'avatar.mimetypes' => 'La imagen debe ser JPG o PNG.',
+            'avatar.mimetypes' => 'La imagen debe ser JPG, PNG, GIF, WebP o BMP.',
             'avatar.dimensions' => 'La imagen debe medir entre 64x64 y 4000x4000 píxeles.',
             'avatar.uploaded' => 'No se pudo subir la imagen (máximo 2 MB).',
         ];

@@ -86,6 +86,9 @@ for base in "$API" "$WEB"; do
 done
 rm -f $big
 
+# 11. GD con soporte WebP (fotos de perfil en .webp se convierten a JPEG)
+docker exec clans_app php -r 'exit(!empty(gd_info()["WebP Support"]) ? 0 : 1);' && pass "GD soporta WebP" || fail "GD soporta WebP" "sin soporte"
+
 echo "----"
 [ $fails -eq 0 ] && echo "OK: todos los tests de infraestructura pasan" || echo "FALLAN: $fails"
 exit $([ $fails -eq 0 ] && echo 0 || echo 1)

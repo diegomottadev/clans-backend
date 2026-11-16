@@ -23,6 +23,7 @@ class LogoutInvalidatesTokenTest extends TestCase
         $this->refreshApplication();
     }
 
+
     protected function tearDown(): void
     {
         if ($this->previousCacheDriver !== null) {

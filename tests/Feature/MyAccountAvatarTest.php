@@ -97,11 +97,12 @@ class MyAccountAvatarTest extends TestCase
         $this->assertStringNotContainsString('<?php', $stored);
     }
 
-    public function test_rechaza_tipo_no_permitido_gif()
+    public function test_rechaza_archivo_que_no_es_imagen()
     {
+        // (GIF/WebP/BMP ahora se aceptan y convierten: ver AvatarFormatsTest)
         $user = $this->user();
 
-        $this->upload($user, UploadedFile::fake()->image('anim.gif', 300, 300))
+        $this->upload($user, UploadedFile::fake()->create('doc.pdf', 10, 'application/pdf'))
             ->assertStatus(422)->assertJsonStructure(['avatar']);
     }
 
