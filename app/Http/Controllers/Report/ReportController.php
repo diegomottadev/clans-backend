@@ -999,7 +999,7 @@ class ReportController extends ApiController
         $observations = $request->observations;
         if (is_string($observations) && $observations !== 'null') {
             $observations = strip_tags($observations, '<p><br><b><strong><i><em><u><s><ul><ol><li><span><h1><h2><h3><h4><blockquote>');
-            $observations = preg_replace('/<(\/?)([a-z0-9]+)[^>]*>/i', '<$1$2>', $observations);
+            $observations = preg_replace('/<(\/?)([a-z0-9]+)\b[^>]*>/i', '<$1$2>', $observations);
         }
 
         $studentId = $request->studentId;
