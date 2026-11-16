@@ -449,25 +449,27 @@ class ReportController extends ApiController
                 $dateFinish = "{$year}-12-31";
             }
 
-            $assitences =  Student::query()->with(['assitences', 'assitences.course']);
-            $assitences = $assitences->when($dateInit !== "null" && $dateFinish !== "null" && $studentId !== "null", function ($q) use ($dateInit, $dateFinish, $studentId) {
-                return $q->whereHas('assitences', function ($s) use ($dateInit, $dateFinish) {
-                    return  $s->whereBetween('fecha', [$dateInit, $dateFinish])->orderBy('fecha', 'DESC');
-                })->where('id', $studentId);
-            });
-
-            $evaluations =  Student::query()->with(['evaluations', 'evaluations.course', 'evaluations.typeEvaluation']);
-            $evaluations = $evaluations->when($dateInit != "null" && $dateFinish != "null", function ($q) use ($dateInit, $dateFinish, $studentId) {
-                return $q->whereHas('evaluations', function ($s) use ($dateInit, $dateFinish) {
-                    return  $s->whereBetween('fecha', [$dateInit, $dateFinish])->orderBy('fecha', 'DESC');
-                })->where('id', $studentId);
-            });
+            // Filtrar también la carga de relaciones: whereHas solo filtra al alumno,
+            // no las asistencias/evaluaciones que se traen con with().
+            $student = Student::with([
+                'assitences' => function ($q) use ($dateInit, $dateFinish) {
+                    $q->whereBetween('fechas_curso.fecha', [$dateInit, $dateFinish])
+                      ->orderBy('fechas_curso.fecha', 'DESC');
+                },
+                'assitences.course',
+                'evaluations' => function ($q) use ($dateInit, $dateFinish) {
+                    $q->whereBetween('evaluaciones.fecha', [$dateInit, $dateFinish])
+                      ->orderBy('evaluaciones.fecha', 'DESC');
+                },
+                'evaluations.course',
+                'evaluations.typeEvaluation',
+            ])->find($studentId);
 
             $invoices = Invoice::with('studentCourse.course')->where('id_alumno', $studentId)->whereBetween('fecha_emision', [$dateInit, $dateFinish]);
 
             $params = [
-                'assistences' => count($assitences->get()) > 0 ? $assitences->get()[0]['assitences'] : null,
-                'evaluations' => count($evaluations->get()) > 0 ? $evaluations->get()[0]['evaluations']: null,
+                'assistences' => $student && $student->assitences->isNotEmpty() ? $student->assitences : null,
+                'evaluations' => $student && $student->evaluations->isNotEmpty() ? $student->evaluations : null,
                 'invoices' => $invoices->get(),
             ];
 
