@@ -39,6 +39,31 @@ bad=$(grep -hE '^\s*(FROM|COPY --from=)|^\s*image:' "$ROOT/Dockerfile" "$ROOT/do
 maps=$(docker exec clans_frontend sh -c 'find /usr/share/nginx/html -name "*.map" | wc -l' 2>/dev/null)
 [ "$maps" = "0" ] && pass "frontend sin archivos .map" || fail "frontend sin archivos .map" "$maps archivos"
 
+# 6. (H13) nginx del backend: cabeceras de seguridad, sin versión ni X-Powered-By
+hdr=$(curl -s -D - -o /dev/null "$API/api/auth/me" | tr -d '')
+for h in "X-Content-Type-Options: nosniff" "X-Frame-Options: DENY" "Referrer-Policy:" "Content-Security-Policy: frame-ancestors 'none'"; do
+  echo "$hdr" | grep -qi "^$h" && pass "backend cabecera $h" || fail "backend cabecera $h" "ausente"
+done
+echo "$hdr" | grep -qiE '^Server: nginx/[0-9]' && fail "backend sin versión de nginx" "$(echo "$hdr" | grep -i '^Server:')" || pass "backend sin versión de nginx"
+echo "$hdr" | grep -qi '^X-Powered-By:' && fail "backend sin X-Powered-By" "$(echo "$hdr" | grep -i '^X-Powered-By:')" || pass "backend sin X-Powered-By"
+
+# 7. (H13) archivos ocultos y de respaldo no se sirven
+for path in /.env /.git/config /backup.sql /db.dump /composer.lock /README.md; do
+  code=$(curl -s -o /dev/null -w "%{http_code}" "$API$path")
+  case "$code" in 403|404) pass "backend bloquea $path ($code)";; *) fail "backend bloquea $path" "HTTP $code";; esac
+done
+
+# 8. (H15) nginx del frontend: cabeceras y bloqueo de .map/dotfiles
+WEB=${WEB:-http://127.0.0.1:3000}
+fhdr=$(curl -s -D - -o /dev/null "$WEB/" | tr -d '')
+for h in "X-Content-Type-Options: nosniff" "X-Frame-Options:" "Content-Security-Policy:"; do
+  echo "$fhdr" | grep -qi "^$h" && pass "frontend cabecera $h" || fail "frontend cabecera $h" "ausente"
+done
+for path in /static/js/main.js.map /.env /.git/config; do
+  code=$(curl -s -o /dev/null -w "%{http_code}" "$WEB$path")
+  case "$code" in 403|404) pass "frontend bloquea $path ($code)";; *) fail "frontend bloquea $path" "HTTP $code";; esac
+done
+
 echo "----"
 [ $fails -eq 0 ] && echo "OK: todos los tests de infraestructura pasan" || echo "FALLAN: $fails"
 exit $([ $fails -eq 0 ] && echo 0 || echo 1)
