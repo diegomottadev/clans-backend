@@ -92,6 +92,15 @@
                             <td colspan="2"><strong>Monto</strong></td>
                             <td>$ {{ number_format($amount, 2, ',', '.') }}</td>
                         </tr>
+                        @if(!empty($observation))
+                        <tr>
+                            <td colspan="2" style="vertical-align: top;"><strong>Observaci&oacute;n</strong></td>
+                            <td style="vertical-align: top;">{{ $observation }}</td>
+                            <td></td>
+                            <td colspan="2" style="vertical-align: top;"><strong>Observaci&oacute;n</strong></td>
+                            <td style="vertical-align: top;">{{ $observation }}</td>
+                        </tr>
+                        @endif
                     </tbody>
                 </table>
             </div>

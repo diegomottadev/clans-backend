@@ -655,10 +655,11 @@ class ReportController extends ApiController
             }
             $date = $paymentTeacher->fecha;
             $amount = $paymentTeacher->monto;
+            $observation = $paymentTeacher->observacion;
             $id = $paymentTeacher->id;
             $logoPath = public_path('img/encabezado-factura.png');
             $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
-            $pdf = PDF::loadView('reportes.paymentTeacherReceipt', compact('teacher', 'date', 'amount', 'id', 'logoBase64'));
+            $pdf = PDF::loadView('reportes.paymentTeacherReceipt', compact('teacher', 'date', 'amount', 'observation', 'id', 'logoBase64'));
             return $pdf->download('recibo-pago-docente.pdf');
         } catch (\Exception $e) {
             Log::critical('Exception: ' . $e);
