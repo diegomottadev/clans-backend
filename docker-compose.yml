@@ -63,7 +63,8 @@ services:
       context: ../clans-view
       dockerfile: Dockerfile
       args:
-        REACT_APP_BASE_URL: http://localhost:8080
+        # vacío = mismo origen: :3000/api se reenvía al backend (sin CORS)
+        REACT_APP_BASE_URL: ""
     image: clans-view
     container_name: clans_frontend
     restart: unless-stopped
