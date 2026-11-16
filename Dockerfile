@@ -22,11 +22,15 @@ RUN apt-get update && apt-get install -y \
  && docker-php-ext-install pdo pdo_pgsql mbstring zip exif pcntl opcache gd \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# php.ini de producción (display_errors Off, register_argc_argv Off) + endurecimiento
+RUN cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini
+COPY ./docker/php/security.ini /usr/local/etc/php/conf.d/zz-security.ini
+
 # Configuracion de OPcache
 COPY ./docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 
 # Instalar Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2.8.9 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
