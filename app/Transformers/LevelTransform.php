@@ -52,6 +52,7 @@ class LevelTransform extends TransformerAbstract
     public static function originalAttributes($index){
         $attributes = [
             //
+            'fee' => 'cuota',
             'id' => 'id',
             'name' => 'nombre',
             'typeCourse' => 'typeCourse',

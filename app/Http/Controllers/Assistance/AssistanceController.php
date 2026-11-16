@@ -55,6 +55,14 @@ class AssistanceController extends ApiController
         }
 
         // Curso (por id o nombre parcial)
+        // Búsqueda de texto por nombre de curso (independiente del desplegable de curso)
+        $courseSearch = trim((string) $request->input('courseSearch', ''));
+        if ($courseSearch !== '') {
+            $query->whereHas('course', function ($q) use ($courseSearch) {
+                $q->whereRaw("UPPER(unaccent(nombre)) LIKE UPPER(unaccent(?))", ['%' . $courseSearch . '%']);
+            });
+        }
+
         $courseAssistence = $request->input('courseAssistence');
         if ($courseAssistence !== null && $courseAssistence !== '') {
             if (is_numeric($courseAssistence)) {
@@ -101,6 +109,14 @@ class AssistanceController extends ApiController
         if ($levelId !== null && $levelId !== '' && $levelId !== 'null') {
             $query->whereHas('course', function ($q) use ($levelId) {
                 $q->where('id_nivel', (int) $levelId);
+            });
+        }
+
+        // Búsqueda de texto por nombre de curso (independiente del desplegable de curso)
+        $courseSearch = trim((string) $request->input('courseSearch', ''));
+        if ($courseSearch !== '') {
+            $query->whereHas('course', function ($q) use ($courseSearch) {
+                $q->whereRaw("UPPER(unaccent(nombre)) LIKE UPPER(unaccent(?))", ['%' . $courseSearch . '%']);
             });
         }
 

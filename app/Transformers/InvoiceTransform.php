@@ -56,6 +56,7 @@ class InvoiceTransform extends TransformerAbstract
     public static function originalAttributes($index){
         $attributes = [
             //
+            'fee' => 'cuota',
             'id' => 'id',
             'student' => 'student',
             'studentCourse' => 'studentCourse',

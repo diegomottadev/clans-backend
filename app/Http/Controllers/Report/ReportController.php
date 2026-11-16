@@ -43,6 +43,12 @@ class ReportController extends ApiController
         // );
     }
 
+    /** El frontend manda "null" (string) cuando un filtro está vacío. */
+    private function reportParam($value): bool
+    {
+        return $value !== null && $value !== '' && $value !== 'null' && $value !== 'undefined';
+    }
+
     public function getReportPaymentTeacher(Request $request)
     {
         $teacherId =  $request->teacherId;
@@ -54,13 +60,18 @@ class ReportController extends ApiController
         $schoolYear = SchoolYear::find($schoolYearId);
         $reportsTeacher = PaymentTeacher::query()->orderBy('fecha', 'DESC');
 
-        $reportsTeacher->when($teacherId != "null" && $dateInit != "null"  && $dateFinish != "null", function ($q) use ($dateInit, $dateFinish, $teacherId) {
-            return $q->where('id_profesor', $teacherId)->whereBetween('fecha', [$dateInit, $dateFinish]);
-        })->orderBy('fecha', 'DESC');
-        $reportsTeacher->when($teacherId != "null" && $dateInit == "null"  && $dateFinish == "null", function ($q) use ($dateInit, $dateFinish, $teacherId) {
-            return $q->where('id_profesor', $teacherId);
-        })->orderBy('fecha', 'DESC');
-        $reportsTeacher->when($schoolYear, function ($q) use ($schoolYear) {
+        // Cada filtro se aplica de forma independiente
+        $hasTeacher = $this->reportParam($teacherId);
+        $hasRange = $this->reportParam($dateInit) && $this->reportParam($dateFinish);
+
+        $reportsTeacher->when($hasTeacher, function ($q) use ($teacherId) {
+            return $q->where('id_profesor', (int) $teacherId);
+        });
+        $reportsTeacher->when($hasRange, function ($q) use ($dateInit, $dateFinish) {
+            return $q->whereBetween('fecha', [$dateInit, $dateFinish]);
+        });
+        // Sin rango de fechas: limitar al año lectivo seleccionado
+        $reportsTeacher->when(!$hasRange && $schoolYear, function ($q) use ($schoolYear) {
             return $q->whereYear('fecha', $schoolYear->year);
         });
 
@@ -102,25 +113,23 @@ class ReportController extends ApiController
             });
         })->orderBy('fecha_emision', 'DESC');
  */
-        if ($dateInit !== "null" && $dateFinish !== "null" && $languajeId !== "null" && $courseId == "null") {
-            $query->when($dateInit !== "null" && $dateFinish !== "null" && $languajeId !== "null", function ($q) use ($dateInit, $dateFinish, $languajeId, $schoolYearId) {
-                return $q->whereBetween('fecha_emision', [$dateInit, $dateFinish])->whereHas('studentCourse', function ($r) use ($languajeId, $schoolYearId) {
-
-                    return $r->whereHas('course', function ($r) use ($languajeId, $schoolYearId) {
-                        return $r->where('school_year_id', $schoolYearId)->whereHas('level', function ($r) use ($languajeId) {
-                            return $r->where('id_idioma', $languajeId);
-                        });
-                    });
-                });
-            })->orderBy('fecha_emision', 'DESC');
+        // Cada filtro se aplica de forma independiente (antes idioma/curso se ignoraban sin fechas)
+        if ($this->reportParam($dateInit) && $this->reportParam($dateFinish)) {
+            $query->whereBetween('fecha_emision', [$dateInit, $dateFinish]);
         }
 
-        if ($dateInit !== "null" && $dateFinish !== "null"  && $languajeId !== "null" && $courseId !== "null") {
-            $query->when($dateInit !== "null" && $dateFinish !== "null" && $courseId !== "null", function ($q) use ($dateInit, $dateFinish, $courseId) {
-                return $q->whereBetween('fecha_emision', [$dateInit, $dateFinish])->whereHas('studentCourse', function ($r) use ($courseId) {
-                    return $r->where('id_curso', $courseId);
+        if ($this->reportParam($courseId)) {
+            $query->whereHas('studentCourse', function ($r) use ($courseId) {
+                return $r->where('id_curso', (int) $courseId);
+            });
+        } elseif ($this->reportParam($languajeId)) {
+            $query->whereHas('studentCourse', function ($r) use ($languajeId, $schoolYearId) {
+                return $r->whereHas('course', function ($r) use ($languajeId, $schoolYearId) {
+                    return $r->where('school_year_id', $schoolYearId)->whereHas('level', function ($r) use ($languajeId) {
+                        return $r->where('id_idioma', (int) $languajeId);
+                    });
                 });
-            })->orderBy('fecha_emision', 'DESC');
+            });
         }
 
         $collections = $request->input('all', '') == 1
@@ -142,21 +151,25 @@ class ReportController extends ApiController
             : SchoolYear::where('active', true)->first()->id;
         $assitences =  Assistance::query()->with(['course', 'studentsAssisted'])->orderBy('fecha', 'DESC');
 
-        $assitences->when(($month === "null") && ($dateInit !== "null") && ($dateFinish !== "null") && ($courseId !== "null"), function ($q) use ($dateInit, $dateFinish, $courseId) {
-            return $q->whereBetween('fecha', [$dateInit, $dateFinish])->where('id_curso', $courseId);
-        })->orderBy('fecha', 'DESC');
+        // Cada filtro se aplica de forma independiente (antes, curso sin fechas mostraba todo)
+        $hasCourse = $this->reportParam($courseId);
+        $hasMonth = $this->reportParam($month) && strpos($month, '-') !== false;
+        $hasRange = $this->reportParam($dateInit) && $this->reportParam($dateFinish);
 
-        $assitences->when(($month !== "null") && ($dateInit === "null") && ($dateFinish === "null") && ($courseId !== "null"), function ($q) use ($month, $courseId) {
-            $date = explode('-', $month);
-            $year =  $date[0]; //año
-            $month =  $date[1]; // mes
-            return    $q->whereYear('fecha', '=', $year)
-                ->whereMonth('fecha', '=', $month)
-                ->where('id_curso', $courseId);
-        })->orderBy('fecha', 'DESC');
+        $assitences->when($hasCourse, function ($q) use ($courseId) {
+            return $q->where('id_curso', (int) $courseId);
+        });
+        $assitences->when($hasMonth, function ($q) use ($month) {
+            [$year, $mes] = explode('-', $month);
+            return $q->whereYear('fecha', '=', (int) $year)->whereMonth('fecha', '=', (int) $mes);
+        });
+        $assitences->when(!$hasMonth && $hasRange, function ($q) use ($dateInit, $dateFinish) {
+            return $q->whereBetween('fecha', [$dateInit, $dateFinish]);
+        });
 
+        // Sin mes ni rango: limitar al año lectivo seleccionado
         $sy = SchoolYear::find($schoolYearId);
-        $assitences->when(($courseId === "null" || $courseId === null) && $sy, function ($q) use ($sy) {
+        $assitences->when(!$hasMonth && !$hasRange && $sy, function ($q) use ($sy) {
             return $q->whereYear('fecha', $sy->year);
         });
 
@@ -425,6 +438,17 @@ class ReportController extends ApiController
                 ? (int) $request->schoolYearId
                 : SchoolYear::where('active', true)->first()->id;
 
+            if (!$this->reportParam($studentId)) {
+                return $this->successResponse(['assistences' => null, 'evaluations' => null, 'invoices' => []], 200);
+            }
+            // Sin rango de fechas: usar el año lectivo completo (antes daba error 500)
+            if (!$this->reportParam($dateInit) || !$this->reportParam($dateFinish)) {
+                $sy = SchoolYear::find($schoolYearId);
+                $year = $sy ? $sy->year : date('Y');
+                $dateInit = "{$year}-01-01";
+                $dateFinish = "{$year}-12-31";
+            }
+
             $assitences =  Student::query()->with(['assitences', 'assitences.course']);
             $assitences = $assitences->when($dateInit !== "null" && $dateFinish !== "null" && $studentId !== "null", function ($q) use ($dateInit, $dateFinish, $studentId) {
                 return $q->whereHas('assitences', function ($s) use ($dateInit, $dateFinish) {
@@ -556,23 +580,25 @@ class ReportController extends ApiController
             $schoolYearId = $request->schoolYearId && $request->schoolYearId !== "null"
                 ? (int) $request->schoolYearId
                 : SchoolYear::where('active', true)->first()->id;
-            $assitences =  Assistance::query()->with(['course', 'studentsAssisted']);
+            $assitences =  Assistance::query()->with(['course', 'studentsAssisted'])->orderBy('fecha', 'DESC');
 
-            $assitences->when(($month === "null") && ($dateInit !== "null") && ($dateFinish !== "null") && ($courseId !== "null"), function ($q) use ($dateInit, $dateFinish, $courseId) {
-                return $q->whereBetween('fecha', [$dateInit, $dateFinish])->where('id_curso', $courseId);
-            })->orderBy('fecha', 'DESC');
+            // Misma lógica que getReportAssistancesByCourse (pantalla y PDF coinciden)
+            $hasCourse = $this->reportParam($courseId);
+            $hasMonth = $this->reportParam($month) && strpos($month, '-') !== false;
+            $hasRange = $this->reportParam($dateInit) && $this->reportParam($dateFinish);
 
-            $assitences->when(($month !== "null") && ($dateInit === "null") && ($dateFinish === "null") && ($courseId !== "null"), function ($q) use ($month, $courseId) {
-                $date = explode('-', $month);
-                $year =  $date[0]; //año
-                $month =  $date[1]; // mes
-                return    $q->whereYear('fecha', '=', $year)
-                    ->whereMonth('fecha', '=', $month)
-                    ->where('id_curso', $courseId);
-            })->orderBy('fecha', 'DESC');
-
+            $assitences->when($hasCourse, function ($q) use ($courseId) {
+                return $q->where('id_curso', (int) $courseId);
+            });
+            $assitences->when($hasMonth, function ($q) use ($month) {
+                [$year, $mes] = explode('-', $month);
+                return $q->whereYear('fecha', '=', (int) $year)->whereMonth('fecha', '=', (int) $mes);
+            });
+            $assitences->when(!$hasMonth && $hasRange, function ($q) use ($dateInit, $dateFinish) {
+                return $q->whereBetween('fecha', [$dateInit, $dateFinish]);
+            });
             $sy = SchoolYear::find($schoolYearId);
-            $assitences->when(($courseId === "null" || $courseId === null) && $sy, function ($q) use ($sy) {
+            $assitences->when(!$hasMonth && !$hasRange && $sy, function ($q) use ($sy) {
                 return $q->whereYear('fecha', $sy->year);
             });
 
@@ -646,6 +672,17 @@ class ReportController extends ApiController
         $schoolYearId = $request->schoolYearId && $request->schoolYearId !== "null"
             ? (int) $request->schoolYearId
             : SchoolYear::where('active', true)->first()->id;
+
+        if (!$this->reportParam($studentId)) {
+            return $this->errorResponse("Seleccione un alumno para generar el informe completo", 422);
+        }
+        // Sin rango de fechas: usar el año lectivo completo (igual que en pantalla)
+        if (!$this->reportParam($dateInit) || !$this->reportParam($dateFinish)) {
+            $sy = SchoolYear::find($schoolYearId);
+            $year = $sy ? $sy->year : date('Y');
+            $dateInit = "{$year}-01-01";
+            $dateFinish = "{$year}-12-31";
+        }
 
         $assitences =  Student::query()->with(['assitences', 'assitences.course']);
         $assitences = $assitences->when($dateInit !== "null" && $dateFinish !== "null" && $studentId !== "null", function ($q) use ($dateInit, $dateFinish, $studentId) {
@@ -722,24 +759,33 @@ class ReportController extends ApiController
             :
             null;
 
-        if ($dateInit !== "null" && $dateFinish !== "null" && $languajeId !== "null" && $courseId === "null") {
-            $invoices = $invoices->when($dateInit !== "null" && $dateFinish !== "null" && $languajeId !== "null" && $courseId === "null", function ($q) use ($dateInit, $dateFinish, $languajeId) {
-                return $q->whereBetween('fecha_emision', [$dateInit, $dateFinish])->whereHas('studentCourse', function ($r) use ($languajeId) {
-
-                    return $r->whereHas('course', function ($r) use ($languajeId) {
-                        return $r->whereHas('level', function ($r) use ($languajeId) {
-                            return $r->where('id_idioma', $languajeId);
-                        });
+        // Misma lógica que getReporybyLanguajeCourse (pantalla y PDF coinciden)
+        $sy = SchoolYear::find($schoolYearId);
+        $yearNumber = $sy ? $sy->year : date('Y');
+        $invoices->where(function ($q) use ($yearNumber, $schoolYearId) {
+            $q->where(function ($q2) use ($yearNumber) {
+                $q2->whereNotNull('fecha_emision')->whereYear('fecha_emision', $yearNumber);
+            })->orWhereHas('studentCourse', function ($r) use ($schoolYearId) {
+                $r->whereHas('course', function ($c) use ($schoolYearId) {
+                    $c->where('school_year_id', $schoolYearId);
+                });
+            });
+        });
+        if ($this->reportParam($dateInit) && $this->reportParam($dateFinish)) {
+            $invoices->whereBetween('fecha_emision', [$dateInit, $dateFinish]);
+        }
+        if ($this->reportParam($courseId)) {
+            $invoices->whereHas('studentCourse', function ($r) use ($courseId) {
+                return $r->where('id_curso', (int) $courseId);
+            });
+        } elseif ($this->reportParam($languajeId)) {
+            $invoices->whereHas('studentCourse', function ($r) use ($languajeId, $schoolYearId) {
+                return $r->whereHas('course', function ($r) use ($languajeId, $schoolYearId) {
+                    return $r->where('school_year_id', $schoolYearId)->whereHas('level', function ($r) use ($languajeId) {
+                        return $r->where('id_idioma', (int) $languajeId);
                     });
                 });
-            })->orderBy('fecha_emision', 'DESC');
-        }
-        if ($dateInit !== "null" && $dateFinish !== "null"  && $languajeId !== "null" && $courseId !== "null") {
-            $invoices = $invoices->when($dateInit !== "null" && $dateFinish !== "null" && $courseId !== "null", function ($q) use ($dateInit, $dateFinish, $courseId) {
-                return $q->whereBetween('fecha_emision', [$dateInit, $dateFinish])->whereHas('studentCourse', function ($r) use ($courseId) {
-                    return $r->where('id_curso', $courseId);
-                });
-            })->orderBy('fecha_emision', 'DESC');
+            });
         }
         $invoices = $this->transformData($invoices->get(), InvoiceTransform::class);
 
@@ -760,13 +806,15 @@ class ReportController extends ApiController
         $reportsTeacher = PaymentTeacher::query()->orderBy('fecha', 'DESC');
         $teacher = ($teacherId !== "null") ? Teacher::where('id', $teacherId)->first() : null;
         $teacher = $teacher ? $this->transformData($teacher, TeacherTransform::class) : null;
-        $reportsTeacher->when($teacherId != "null" && $dateInit != "null"  && $dateFinish != "null", function ($q) use ($dateInit, $dateFinish, $teacherId) {
-            return $q->where('id_profesor', $teacherId)->whereBetween('fecha', [$dateInit, $dateFinish]);
-        })->orderBy('fecha', 'DESC');
-        $reportsTeacher->when($teacherId != "null" && $dateInit == "null"  && $dateFinish == "null", function ($q) use ($dateInit, $dateFinish, $teacherId) {
-            return $q->where('id_profesor', $teacherId);
-        })->orderBy('fecha', 'DESC');
-        $reportsTeacher->when($schoolYear, function ($q) use ($schoolYear) {
+        // Misma lógica que getReportPaymentTeacher (pantalla y PDF coinciden)
+        $hasRange = $this->reportParam($dateInit) && $this->reportParam($dateFinish);
+        $reportsTeacher->when($this->reportParam($teacherId), function ($q) use ($teacherId) {
+            return $q->where('id_profesor', (int) $teacherId);
+        });
+        $reportsTeacher->when($hasRange, function ($q) use ($dateInit, $dateFinish) {
+            return $q->whereBetween('fecha', [$dateInit, $dateFinish]);
+        });
+        $reportsTeacher->when(!$hasRange && $schoolYear, function ($q) use ($schoolYear) {
             return $q->whereYear('fecha', $schoolYear->year);
         });
 

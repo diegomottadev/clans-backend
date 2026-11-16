@@ -1,5 +1,10 @@
 FROM php:7.4-fpm
 
+# php:7.4 usa Debian 11 (bullseye), que ya no tiene soporte:
+# sus repos se movieron a archive.debian.org
+RUN sed -i 's|deb.debian.org|archive.debian.org|g' /etc/apt/sources.list \
+ && echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99archive
+
 # Instalar extensiones necesarias
 RUN apt-get update && apt-get install -y \
     libpq-dev \
@@ -13,8 +18,9 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
- && docker-php-ext-configure gd --with-freetype --with-jpeg 2>/dev/null; \
-    docker-php-ext-install pdo pdo_pgsql mbstring zip exif pcntl opcache gd
+ && docker-php-ext-configure gd --with-freetype --with-jpeg \
+ && docker-php-ext-install pdo pdo_pgsql mbstring zip exif pcntl opcache gd \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Configuracion de OPcache
 COPY ./docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini

@@ -12,3 +12,12 @@ Homestead.yaml
 npm-debug.log
 yarn-error.log
 *.DS_Store
+
+# Ignorar carpetas y archivos que empiecen con punto
+.*
+!.gitignore
+
+# Backups de la base (contienen datos personales)
+/backup/
+/docker/db/init/*.sql
+/docker/db/init/*.dump

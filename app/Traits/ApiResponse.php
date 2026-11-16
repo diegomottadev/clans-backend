@@ -9,6 +9,7 @@ use App\Transformers\FixedCostTransform;
 use App\Transformers\PaymentTeacherTransform;
 use App\Transformers\CourseTransform;
 use App\Transformers\StudentTransform;
+use App\Transformers\TeacherTransform;
 
 use Exception;
 use Illuminate\Support\Collection;
@@ -77,6 +78,7 @@ trait ApiResponse{
         if ($collection instanceof \Illuminate\Support\Collection){
             $collection = $this->paginate($collection);
         }else{
+            $collection = $this->applySort($collection, $transformer);
             $collection = $collection->paginate(10);
         }
         Log::channel('single')->info('[ApiResponse::showAll] Tras paginar', [
@@ -132,6 +134,86 @@ trait ApiResponse{
         return $collection;
     }
 
+    /**
+     * Ordenamiento server-side para tablas lazy.
+     * Recibe ?sort_by=<campo del frontend>&sort_order=asc|desc.
+     * Solo ordena por columnas reales (validadas contra el esquema), nunca SQL arbitrario.
+     * Soporta campos propios ("name") y de una relación belongsTo ("course.nombre", "teacher.data.completeName").
+     */
+    protected function applySort($builder, $transformer)
+    {
+        $sortBy = request()->query('sort_by');
+        if (!is_string($sortBy) || $sortBy === '' || !($builder instanceof \Illuminate\Database\Eloquent\Builder)) {
+            return $builder;
+        }
+        $dir = strtolower((string) request()->query('sort_order')) === 'desc' ? 'desc' : 'asc';
+        $model = $builder->getModel();
+        $table = $model->getTable();
+        $parts = explode('.', str_replace('.data.', '.', $sortBy));
+
+        if (count($parts) === 1) {
+            $cols = $this->resolveSortColumns($model, $transformer, $parts[0]);
+            if (!$cols) {
+                return $builder;
+            }
+            $builder->reorder();
+            foreach ($cols as $col) {
+                // NULLS LAST: los vacíos siempre al final, en ambos sentidos
+                $builder->orderByRaw('"' . $table . '"."' . $col . '" ' . $dir . ' NULLS LAST');
+            }
+        } elseif (count($parts) === 2 && method_exists($model, $parts[0])) {
+            $relation = $model->{$parts[0]}();
+            if (!($relation instanceof \Illuminate\Database\Eloquent\Relations\BelongsTo)) {
+                return $builder;
+            }
+            $related = $relation->getRelated();
+            $cols = $this->resolveSortColumns($related, $related->transformer ?? null, $parts[1]);
+            if (!$cols) {
+                return $builder;
+            }
+            $relTable = $related->getTable();
+            $expr = count($cols) > 1
+                ? \DB::raw("concat_ws(' ', " . implode(', ', array_map(function ($c) use ($relTable) { return '"' . $relTable . '"."' . $c . '"'; }, $cols)) . ')')
+                : $relTable . '.' . $cols[0];
+            $sub = $related->newQuery()
+                ->select($expr)
+                ->whereColumn($relTable . '.' . $relation->getOwnerKeyName(), $table . '.' . $relation->getForeignKeyName())
+                ->limit(1);
+            $builder->reorder()->orderByRaw('(' . $sub->toSql() . ') ' . $dir . ' NULLS LAST', $sub->getBindings());
+        } else {
+            return $builder;
+        }
+
+        // Desempate estable para que la paginación no repita/salte filas
+        return $builder->orderBy($table . '.' . $model->getKeyName(), 'desc');
+    }
+
+    /** Traduce un campo del frontend a columna(s) reales de la tabla del modelo. */
+    protected function resolveSortColumns($model, $transformer, $field)
+    {
+        $table = $model->getTable();
+        $has = function ($col) use ($table) {
+            return is_string($col) && \Illuminate\Support\Facades\Schema::hasColumn($table, $col);
+        };
+        if ($field === 'apellido_nombre_completo' && $has('apellido') && $has('nombre')) {
+            return ['apellido', 'nombre'];
+        }
+        $candidates = [];
+        if ($transformer && method_exists($transformer, 'originalAttributes')) {
+            $candidates[] = $transformer::originalAttributes($field);
+        }
+        $candidates[] = $field;
+        foreach ($candidates as $col) {
+            if ($has($col)) {
+                return [$col];
+            }
+        }
+        if ($field === 'completeName' && $has('apellido') && $has('nombre')) {
+            return ['apellido', 'nombre'];
+        }
+        return null;
+    }
+
     protected function paginate(Collection $collection){
         //permitiendo el paginado personalizado
         $rules = [
@@ -179,8 +261,10 @@ trait ApiResponse{
 
                 if(isset($attribute,$value) && $attribute == 'teacher'){
                     $term = '%' . $value . '%';
+                    // Nombre, apellido o combinaciones "nombre apellido" / "apellido nombre"
                     $collection = $collection->whereHas('teacher', function($q) use($term){
-                        $q->whereRaw("UPPER(unaccent(nombre)) LIKE UPPER(unaccent(?))", [$term]);
+                        $q->whereRaw("UPPER(unaccent(nombre || ' ' || apellido)) LIKE UPPER(unaccent(?))", [$term])
+                          ->orWhereRaw("UPPER(unaccent(apellido || ' ' || nombre)) LIKE UPPER(unaccent(?))", [$term]);
                     });
                 }
             }
@@ -189,10 +273,15 @@ trait ApiResponse{
                 $attribute = $transformer::originalAttributes($query);
 
                 if(isset($attribute,$value) && $attribute == 'courseAssistence'){
-                    $term = '%' . $value . '%';
-                    $collection = $collection->whereHas('course', function($q) use($term){
-                        $q->whereRaw("UPPER(unaccent(nombre)) LIKE UPPER(unaccent(?))", [$term]);
-                    });
+                    // Valor numérico = id de curso (desplegable); texto = búsqueda por nombre
+                    if (is_numeric($value)) {
+                        $collection = $collection->where('id_curso', (int) $value);
+                    } else {
+                        $term = '%' . $value . '%';
+                        $collection = $collection->whereHas('course', function($q) use($term){
+                            $q->whereRaw("UPPER(unaccent(nombre)) LIKE UPPER(unaccent(?))", [$term]);
+                        });
+                    }
                 }else if(isset($attribute,$value) && $attribute == 'dateAssistence'){
                     $collection = $collection->where('fecha', $value);
                 }
@@ -201,9 +290,23 @@ trait ApiResponse{
             else if($transformer == CourseTransform::class){
                 $attribute = $transformer::originalAttributes($query);
 
-                if(isset($attribute,$value) && $attribute == 'name'){
+                // originalAttributes('name') devuelve 'nombre'
+                if(isset($attribute,$value) && $attribute == 'nombre'){
                     $term = '%' . $value . '%';
-                    $collection = $collection->whereRaw("UPPER(unaccent(nombre)) LIKE UPPER(unaccent(?))", [$term]);
+                    $collection = $collection->whereRaw("UPPER(unaccent(cursos.nombre)) LIKE UPPER(unaccent(?))", [$term]);
+                }
+            }
+
+            else if($transformer == TeacherTransform::class){
+                $attribute = $transformer::originalAttributes($query);
+                if(isset($attribute,$value) && $attribute == 'nombreCompleto'){
+                    $term = '%' . $value . '%';
+                    $collection = $collection->where(function ($q) use ($term) {
+                        $q->whereRaw("UPPER(unaccent(nombre || ' ' || apellido)) LIKE UPPER(unaccent(?))", [$term])
+                          ->orWhereRaw("UPPER(unaccent(apellido || ' ' || nombre)) LIKE UPPER(unaccent(?))", [$term]);
+                    });
+                } elseif(isset($attribute,$value)) {
+                    $collection = $collection->whereRaw('UPPER(unaccent(CAST("' . $attribute . '" AS TEXT))) LIKE UPPER(unaccent(?))', ['%'.$value.'%']);
                 }
             }
 
@@ -227,8 +330,13 @@ trait ApiResponse{
 
             else{
                 $attribute = $transformer::originalAttributes($query);
-                if(isset($attribute,$value)){
-                    $collection = $collection->whereRaw("UPPER(unaccent({$attribute})) LIKE UPPER(unaccent(?))", ['%'.$value.'%']);
+                // Solo columnas reales de la tabla (evita errores con relaciones) y con comillas
+                // para respetar mayúsculas; CAST a TEXT para soportar números y fechas.
+                if(isset($attribute,$value) && is_string($attribute)
+                    && $collection instanceof \Illuminate\Database\Eloquent\Builder
+                    && \Illuminate\Support\Facades\Schema::hasColumn($collection->getModel()->getTable(), $attribute)){
+                    $col = $collection->getModel()->getTable() . '"."' . $attribute;
+                    $collection = $collection->whereRaw('UPPER(unaccent(CAST("' . $col . '" AS TEXT))) LIKE UPPER(unaccent(?))', ['%'.$value.'%']);
                 }
             }
 
