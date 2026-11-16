@@ -151,7 +151,14 @@ trait ApiResponse{
         $table = $model->getTable();
         $parts = explode('.', str_replace('.data.', '.', $sortBy));
 
-        if (count($parts) === 1) {
+        $expression = (count($parts) === 1 && $transformer && method_exists($transformer, 'sortExpression'))
+            ? $transformer::sortExpression($parts[0])
+            : null;
+
+        if ($expression) {
+            // Expresión fija definida en el transformer (nunca viene del request)
+            $builder->reorder()->orderByRaw('(' . $expression . ') ' . $dir . ' NULLS LAST');
+        } elseif (count($parts) === 1) {
             $cols = $this->resolveSortColumns($model, $transformer, $parts[0]);
             if (!$cols) {
                 return $builder;

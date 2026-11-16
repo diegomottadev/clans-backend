@@ -75,4 +75,17 @@ class InvoiceTransform extends TransformerAbstract
 
         return isset($attributes[$index]) ? $attributes[$index]:null;
     }
+
+    /**
+     * Campos ordenables que no son una columna: expresión SQL sobre la tabla.
+     * "amount" es lo que muestra la columna Monto (cuota + mora).
+     */
+    public static function sortExpression($field)
+    {
+        $expressions = [
+            'amount' => 'COALESCE("facturas"."cuota", 0) + COALESCE("facturas"."mora", 0)',
+        ];
+
+        return $expressions[$field] ?? null;
+    }
 }
