@@ -81,7 +81,7 @@
 
         <h3><strong>{{ $student->nombreCompleto }}</strong></h3>
         <p><strong>Curso: {{ $course->nombre }}</strong></p>
-        {!! $dateInit != "null" && $dateFinish !="null" ? "<p><strong>Período del ".$dateInit. " al "  .$dateFinish. " </strong></p>" : '' !!}
+        {!! $dateInit != "null" && $dateFinish !="null" ? "<p><strong>Período del ".e($dateInit). " al "  .e($dateFinish). " </strong></p>" : '' !!}
 
         <br>
         <div class="card">

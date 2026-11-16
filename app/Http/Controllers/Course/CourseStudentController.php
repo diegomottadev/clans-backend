@@ -28,6 +28,9 @@ class CourseStudentController extends ApiController
      */
     public function index(Request $request, Course $course)
     {
+        if (!$this->canAccessCourse($course->id)) {
+            return $this->forbiddenCourse();
+        }
         //
         $schoolYear = SchoolYear::where('active',true);
         $course = Course::query()

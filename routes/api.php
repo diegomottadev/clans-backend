@@ -52,7 +52,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('auth/me',[AuthController::class, 'me']);
-Route::post('auth/login', [AuthController::class, 'login']);
+Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('auth/logout', [AuthController::class, 'logout']);
 Route::post('auth/refresh', [AuthController::class, 'refresh']);
 Route::get('schoolYears/current',[SchoolYearController::class,'getCurretYear']);
@@ -68,7 +68,7 @@ Route::get('reports/downloadReportByInvoice/{invoice}', [ReportController::class
 Route::get('reports/downloadReportCompleteByStudent', [ReportController::class, 'downloadReportCompleteByStudent'])->middleware(['isAdmin']);
 Route::get('reports/downloadInvoicesByLanguajeCourse', [ReportController::class, 'downloadInvoicesByLanguajeCourse'])->middleware(['isAdmin']);
 Route::get('reports/downloadPaymentTeacher', [ReportController::class, 'downloadPaymentTeacher'])->middleware(['isAdmin']);
-Route::get('reports/downloadReceiptByPaymentTeacher/{paymentTeacher}', [ReportController::class, 'downloadReceiptByPaymentTeacher']);
+Route::get('reports/downloadReceiptByPaymentTeacher/{paymentTeacher}', [ReportController::class, 'downloadReceiptByPaymentTeacher'])->middleware(['isAdmin']);
 Route::get('reports/downloadReportAnalytical', [ReportController::class, 'downloadReportAnalytical'])->middleware(['isAdmin']);
 Route::get('reports/reportAnalytical', [ReportController::class, 'reportAnalytical'])->middleware(['isAdmin']);
 Route::get('reports/reportLanguajeLevelCourse', [ReportController::class, 'getReportLanguajeLevelCourse'])->middleware(['isAdmin']);
@@ -88,22 +88,29 @@ Route::resource('languajes',LanguajeController::class,['only'=>['index','store',
 Route::resource('languajes.courses',LanguajeCourseController::class,['only'=>['index']])->middleware(['isAdmin']);
 Route::resource('languajes.levels',LanguajeLevelController::class,['only'=>['index']])->middleware(['isAdmin']);
 
-Route::resource('levels',LevelController::class,['only'=>['index','store','update','destroy']])->middleware(['isUser']);
+// SecDevOps: el docente (role=user) solo lee; las escrituras quedan para admin
+Route::resource('levels',LevelController::class,['only'=>['index']])->middleware(['isUser']);
+Route::resource('levels',LevelController::class,['only'=>['store','update','destroy']])->middleware(['isAdmin']);
 Route::resource('levels.courses',LevelCourseController::class,['only'=>['index']])->middleware(['isAdmin']);
 
-Route::resource('teachers',TeacherController::class,['only'=>['index','store','update','destroy']])->middleware(['isUser']);
-Route::resource('courses',CourseController::class,['only'=>['index','store','show','update','destroy']])->middleware(['isUser']);
+Route::resource('teachers',TeacherController::class,['only'=>['index']])->middleware(['isUser']);
+Route::resource('teachers',TeacherController::class,['only'=>['store','update','destroy']])->middleware(['isAdmin']);
+Route::resource('courses',CourseController::class,['only'=>['index','show']])->middleware(['isUser']);
+Route::resource('courses',CourseController::class,['only'=>['store','update','destroy']])->middleware(['isAdmin']);
 Route::resource('courses.concepts',CourseConceptController::class,['only'=>['index']])->middleware(['isUser']);
 Route::resource('courses.students',CourseStudentController::class,['only'=>['index']])->middleware(['isUser']);
 Route::get('students/swapped-names', [StudentFixController::class, 'swappedNames'])->middleware(['isAdmin']);
 Route::post('students/fix-swapped-names', [StudentFixController::class, 'fixSwappedNames'])->middleware(['isAdmin']);
-Route::get('students/counts', [StudentController::class, 'counts'])->middleware(['isUser']);
-Route::resource('students',StudentController::class,['only'=>['index','show','store','update','destroy']])->middleware(['isUser']);
-Route::resource('students.courses',StudentCourseController::class,['only'=>['store','update','destroy']])->middleware(['isUser']);
-Route::resource('typeExpenses',TypeExpenseController::class,['only'=>['index','store','update','destroy']]);
-Route::resource('typeAssistances',TypeAssistanceController::class,['only'=>['index','store','update','destroy']])->middleware(['isUser']);
-Route::resource('typeEvaluations',TypeEvaluationController::class,['only'=>['index','store','update','destroy']])->middleware(['isUser']);
-Route::resource('typeCourses',TypeCourseController::class,['only'=>['index','store','update','destroy']]);
+Route::get('students/counts', [StudentController::class, 'counts'])->middleware(['isAdmin']);
+// Datos personales de alumnos (DNI, teléfonos): solo admin. El docente obtiene sus alumnos vía courses/{id}/students
+Route::resource('students',StudentController::class,['only'=>['index','show','store','update','destroy']])->middleware(['isAdmin']);
+Route::resource('students.courses',StudentCourseController::class,['only'=>['store','update','destroy']])->middleware(['isAdmin']);
+Route::resource('typeExpenses',TypeExpenseController::class,['only'=>['index','store','update','destroy']])->middleware(['isAdmin']);
+Route::resource('typeAssistances',TypeAssistanceController::class,['only'=>['index']])->middleware(['isUser']);
+Route::resource('typeAssistances',TypeAssistanceController::class,['only'=>['store','update','destroy']])->middleware(['isAdmin']);
+Route::resource('typeEvaluations',TypeEvaluationController::class,['only'=>['index']])->middleware(['isUser']);
+Route::resource('typeEvaluations',TypeEvaluationController::class,['only'=>['store','update','destroy']])->middleware(['isAdmin']);
+Route::resource('typeCourses',TypeCourseController::class,['only'=>['index','store','update','destroy']])->middleware(['isAdmin']);
 Route::get('evaluations/counts', [EvaluationController::class, 'counts'])->middleware(['isUser']);
 Route::resource('evaluations',EvaluationController::class,['only'=>['index','store','update','destroy']])->middleware(['isUser']);
 Route::resource('evaluations.students',EvalutionStudentController::class,['only'=>['store','update','destroy']])->middleware(['isUser']);
@@ -114,7 +121,7 @@ Route::resource('concepts',ConceptController::class,['only'=>['index']])->middle
 Route::get('assistances/counts', [AssistanceController::class, 'counts'])->middleware(['isUser']);
 Route::resource('assistances',AssistanceController::class,['only'=>['index','store','update','destroy']])->middleware(['isUser']);
 Route::resource('assistances.students',AssistanceStudentController::class,['only'=>['store','update']])->middleware(['isUser']);
-Route::get('debtors/auto', [DebtorController::class, 'auto'])->middleware(['isUser']);
+Route::get('debtors/auto', [DebtorController::class, 'auto'])->middleware(['isAdmin']);
 Route::resource('debtors',DebtorController::class,['only'=>['index']])->middleware(['isAdmin']);
 Route::resource('users',UserController::class,['only'=>['index','show','store','update','destroy']])->middleware(['isAdmin']);
 

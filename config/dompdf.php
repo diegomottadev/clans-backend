@@ -198,7 +198,7 @@ return array(
          *
          * @var bool
          */
-        "enable_php" => true,
+        "enable_php" => false, // SecDevOps: evita ejecución de <script type="text/php"> inyectado (RCE)
 
         /**
          * Enable inline Javascript

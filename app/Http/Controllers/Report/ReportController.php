@@ -988,7 +988,13 @@ class ReportController extends ApiController
         $oralidad = $request->oralidad;
         $participacion = $request->participacion;
         $cumplimiento = $request->cumplimiento;
+        // SecDevOps: las observaciones son HTML del editor y se imprimen con {!! !!} en el PDF.
+        // Se deja solo un subconjunto de etiquetas de formato y se quitan atributos (on*, style, src, href...).
         $observations = $request->observations;
+        if (is_string($observations) && $observations !== 'null') {
+            $observations = strip_tags($observations, '<p><br><b><strong><i><em><u><s><ul><ol><li><span><h1><h2><h3><h4><blockquote>');
+            $observations = preg_replace('/<(\/?)([a-z0-9]+)[^>]*>/i', '<$1$2>', $observations);
+        }
 
         $studentId = $request->studentId;
         $dateInit = $request->dateInit;

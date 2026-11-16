@@ -163,6 +163,9 @@ class AssistanceController extends ApiController
         ];
 
         $this->validate($request,$rules);
+        if (!$this->canAccessCourse($request->course)) {
+            return $this->forbiddenCourse();
+        }
 
         $assistance = Assistance::create([
             'fecha' =>  $request->date,
@@ -175,6 +178,9 @@ class AssistanceController extends ApiController
     }
 
     public function update(Request $request, Assistance $assistance){
+        if (!$this->canAccessCourse($assistance->id_curso)) {
+            return $this->forbiddenCourse();
+        }
         $rules = [
             'date' => 'required',
         ];
@@ -187,6 +193,9 @@ class AssistanceController extends ApiController
     }
 
     public function destroy(Assistance $assistance){
+        if (!$this->canAccessCourse($assistance->id_curso)) {
+            return $this->forbiddenCourse();
+        }
         $assistance->load(['course', 'studentsAssisted']);
         $assistance->delete();
         return $this->showOne($assistance);

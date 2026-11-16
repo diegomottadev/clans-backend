@@ -19,7 +19,13 @@ class isAdmin
     public function handle(Request $request, Closure $next)
     {
 
-        if($request->user()->role == 'admin'){
+        $user = $request->user();
+
+        if (!$user) {
+            return $this->errorResponse('No autenticado', 401);
+        }
+
+        if($user->role === 'admin'){
             return $next($request);
         }
 

@@ -28,7 +28,7 @@
             </div>
         </div>
         <h3><strong>{{ $student->nombreCompleto }}</strong></h3>
-        {!! $dateInit != "null" && $dateFinish !="null" ? "<h5><strong>Periodo del ".$dateInit. " al "  .$dateFinish. " </strong></h5>" : '' !!}
+        {!! $dateInit != "null" && $dateFinish !="null" ? "<h5><strong>Periodo del ".e($dateInit). " al "  .e($dateFinish). " </strong></h5>" : '' !!}
         {{-- {!! $month!="null"  ? "<h5><strong>Periodo ".$month.  " </strong></h5>" : '' !!} --}}
         <div class="card">
             <div class="card-header">

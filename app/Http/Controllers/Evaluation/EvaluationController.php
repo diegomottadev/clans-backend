@@ -181,6 +181,9 @@ class EvaluationController extends ApiController
         ];
 
         $this->validate($request,$rules);
+        if (!$this->canAccessCourse($request->course)) {
+            return $this->forbiddenCourse();
+        }
 
         $evaluation = Evaluation::create([
             'nombre'=> $request->name,
@@ -205,6 +208,10 @@ class EvaluationController extends ApiController
         ];
 
         $this->validate($request,$rules);
+        // Debe poder operar sobre el curso actual y sobre el curso destino
+        if (!$this->canAccessCourse($evaluation->id_curso) || !$this->canAccessCourse($request->course)) {
+            return $this->forbiddenCourse();
+        }
 
         $evaluation->nombre = $request->name;
         $evaluation->id_curso = $request->course;
@@ -218,6 +225,9 @@ class EvaluationController extends ApiController
 
     public function destroy(Evaluation $evaluation)
     {
+        if (!$this->canAccessCourse($evaluation->id_curso)) {
+            return $this->forbiddenCourse();
+        }
         $evaluation->load(['course.students', 'typeEvaluation', 'students']);
         $evaluation->delete();
         return $this->showOne($evaluation);

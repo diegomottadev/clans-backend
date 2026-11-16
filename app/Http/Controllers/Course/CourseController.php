@@ -60,6 +60,9 @@ class CourseController extends ApiController
 
     public function show(Course $course)
     {
+        if (!$this->canAccessCourse($course->id)) {
+            return $this->forbiddenCourse();
+        }
         //
         $course = Course::with(['students:id,nombre,apellido,nombreCompleto', 'teacher:id,nombre,apellido'])->find($course->id);
         return $this->showOne($course);

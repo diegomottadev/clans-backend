@@ -47,10 +47,10 @@ class UserController extends ApiController
         //
         $rules = [
             'name' => 'required|max:60',
-            'email'=> 'required|max:60|unique:users,email',
+            'email'=> 'required|email|max:60|unique:users,email',
             'password'=> 'required',
             'teacher'=> 'required',
-            'role' => 'required'
+            'role' => 'required|in:admin,user'
         ];
 
         $this->validate($request,$rules);
@@ -83,7 +83,7 @@ class UserController extends ApiController
             'email' => 'required|max:60|unique:users,email,'. $user->id,
             'name'=> 'required|max:60',
             'teacher'=> 'required',
-            'role' => 'required'
+            'role' => 'required|in:admin,user'
         ];
 
         $this->validate($request,$rules);

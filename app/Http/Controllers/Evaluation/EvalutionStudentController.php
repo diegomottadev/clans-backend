@@ -46,6 +46,9 @@ class EvalutionStudentController extends ApiController
 
     public function store(Request $request,Evaluation $evaluation)
     {
+        if (!$this->canAccessCourse($evaluation->id_curso)) {
+            return $this->forbiddenCourse();
+        }
         $scoresArray = [];
         $scores = ($request->studentWithScore);
         foreach($scores as $studentNotes){
@@ -97,6 +100,9 @@ class EvalutionStudentController extends ApiController
      */
     public function update(Request $request, Evaluation $evaluation,Student $student)
     {
+        if (!$this->canAccessCourse($evaluation->id_curso)) {
+            return $this->forbiddenCourse();
+        }
         //
 
         $evaluation->students()->detach($student);

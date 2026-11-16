@@ -30,8 +30,8 @@
         <p><strong>Idioma: </strong> {{ $languaje->nombre }}</p>
         <p><strong>Nivel: </strong> {{ $level->nombre }}</p>
         <p><strong>Curso: </strong>{{ $course->nombre }}</p>
-        {!! $dateInit != "null" && $dateFinish !="null" ? "<h5><strong>Periodo del ".$dateInit. " al "  .$dateFinish. " </strong></h5>" : '' !!}
-        {!! $month!="null"  ? "<h5><strong>Periodo ".$month.  " </strong></h5>" : '' !!}
+        {!! $dateInit != "null" && $dateFinish !="null" ? "<h5><strong>Periodo del ".e($dateInit). " al "  .e($dateFinish). " </strong></h5>" : '' !!}
+        {!! $month!="null"  ? "<h5><strong>Periodo ".e($month).  " </strong></h5>" : '' !!}
         @foreach ($assistences as $key => $assitence)
             <div class="card">
                 <div class="card-header">

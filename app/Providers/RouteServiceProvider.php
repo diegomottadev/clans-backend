@@ -59,5 +59,16 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
         });
+
+        // SecDevOps (OWASP A07 / API4): frena fuerza bruta en el login.
+        // Clave = email + IP, para que detrás de un proxy (todas las IP iguales)
+        // no se bloquee a todos los usuarios a la vez.
+        RateLimiter::for('login', function (Request $request) {
+            $email = strtolower(trim((string) $request->input('email')));
+            return [
+                Limit::perMinute(10)->by('login|' . $email . '|' . $request->ip()),
+                Limit::perMinute(60)->by('login-ip|' . $request->ip()),
+            ];
+        });
     }
 }

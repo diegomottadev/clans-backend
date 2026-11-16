@@ -23,6 +23,9 @@ class AssistanceStudentController extends ApiController
     }
 
     public function store(Request $request , Assistance $assistance){
+        if (!$this->canAccessCourse($assistance->id_curso)) {
+            return $this->forbiddenCourse();
+        }
 
         $assistance->studentsAssisted()->detach();
         $data = [];
@@ -35,6 +38,9 @@ class AssistanceStudentController extends ApiController
     }
 
     public function update(Request $request , Assistance $assistance, Student $student){
+        if (!$this->canAccessCourse($assistance->id_curso)) {
+            return $this->forbiddenCourse();
+        }
 
         $assistance->studentsAssisted()->detach($student);
         $assistance->save();
